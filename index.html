@@ -135,7 +135,7 @@
 		.draggable {
 			cursor: grab;
 		}
-		
+
 		.node {
 
 			cursor: pointer;
@@ -173,6 +173,7 @@
 			gap: 10px;
 			flex-direction: column;
 		}
+
 		/*上侧变量栏*/
 		.variable-bar {
 			position: absolute;
@@ -189,15 +190,35 @@
 			flex-direction: row;
 		}
 
+		/*判断卡片的特殊样式*/
+		.condition_card {
+			background: #e3f2fd;
+			border: 2px solid #2196f3;
+			padding: 12px 16px;
+			border-radius: 4px;
+			margin: 8px 0;
+			font-weight: bold;
+		}
 
-    .condition-card {
-      background: #e3f2fd;
-      border: 2px solid #2196f3;
-      padding: 12px 16px;
-      border-radius: 4px;
-      margin: 8px 0;
-      font-weight: bold;
-    }
+		.condition_box {
+			bottom: 30px;
+			right: 3px;
+			display: none;
+		}
+
+		.condition_box_button {
+			padding: 4px 12px;
+			background-color: #2196f3;
+			color: #fff;
+			border: none;
+			border-radius: 4px;
+			display: none;
+		}
+
+		.condition-radio-group label {
+			cursor: pointer;
+			font-size: 14px;
+		}
 	</style>
 </head>
 
@@ -222,10 +243,10 @@
 		<input id="userInput" type="text" placeholder="请输入内容">
 		<button id="submitBtn">提交</button>
 	</div>
-	<div class="condition-card",id = 'condition-card'>ahhaah</div>
+	<div class="condition-card" ,id='condition-card'>ahhaah</div>
 	<!-- 右侧菜单 -->
 	<div class="card-menu">
-		
+
 		<h3>卡片类型</h3>
 		<!-- 位置在屏幕最右侧，靠右侧-->
 		<!--显示刚才点击的卡片信息-->
@@ -236,8 +257,24 @@
 			<li id="currentCardData-nodes">节点: </li>
 			<li id="currentCardData-position">位置: </li>
 			<li id="currentCardData-titlebarcolor">标题栏颜色: </li>
-			
+
+
 		</ul>
+		<!--条件设定按钮-->
+		<!--button id="conditionBtn" class="card">条件设定</button-->
+		<div class="condition-radio-group" style="display:none; text-align:right; margin-top:8px;">
+			<label style="margin-left:20px;">
+				<input type="radio" name="cond" value="相等"> 相等
+			</label>
+			<br>   <!-- 手动换行 -->
+			<label style="margin-left:20px;">
+				<input type="radio" name="cond" value="大于"> 大于
+			</label>
+						<br>   <!-- 手动换行 -->
+			<label style="margin-left:20px;">
+				<input type="radio" name="cond" value="小于"> 小于
+			</label>
+		</div>
 	</div>
 	<!--TODO-->
 	<!-- 上侧变量栏 -->
@@ -250,6 +287,10 @@
 			<!-- 更多变量 -->
 		</ul>
 	</div>
+
+
+
+	<!-- SVG 容器 -->
 	<svg style="width: 100%;height: 100%;" id="svgContainer" class="grid-background">
 		<g id="linksContainer"></g> <!-- 用于存放线条 -->
 		<g id="cardsContainer"></g> <!-- 用于存放卡片 -->
@@ -257,9 +298,10 @@
 
 	<script src="CardKind.js"></script>
 	<script src="DrawCard.js"></script>
+	<script src="judgeCard.js"></script>
 	<script>
 
-		
+
 		let cards = nodekind();
 
 		let cardmenu = ['start', 'condition', 'call', 'print', 'add', 'subtract', 'multiply',
@@ -306,7 +348,7 @@
 
 		/*现在点击的卡片*/
 		let currentCardData = cardLinklist[0];
-		
+
 		// 定义变量来追踪是否正在拖动以及拖动的起始位置
 		let isPanning = false;
 		let startPan = {
@@ -314,16 +356,17 @@
 			y: 0
 		};
 		/*******是否需要显示特殊块，用来配置卡片的属性******/
-		
+
 		// 用于调整SVG视图窗口的变量
 		let currentPan = {
 			x: 0,
 			y: 0
 		};
-		
+
 		init();
 		let cardsType = [];
-
+		
+		
 		document.getElementById('submitBtn').addEventListener('click', function () {
 			const input = document.getElementById('userInput').value;
 			console.log('用户输入的内容:', input);
