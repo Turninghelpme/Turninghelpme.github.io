@@ -23,7 +23,7 @@ function nodekind() {
         y: 200,
         label: '判断',
         type: "判断",
-        states: 'largerThan',
+        states: '相等',
         nodes: [{
             type: "in",
             level: 0,
