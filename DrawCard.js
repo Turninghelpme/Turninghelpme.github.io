@@ -519,7 +519,7 @@ function moveCard(e) {
     document.getElementById('currentCardData-position').textContent = '位置: (' + currentCardData.x + ',' + currentCardData.y + ')';
     document.getElementById('currentCardData-titlebarcolor').textContent = '标题栏颜色: ' + currentCardData.titleBarColor;
     //TODO: 看看是不是condition,是的话，显示condition的设定模块
-
+    judgeCard(currentCardData,cardLinklist);
     //TODO: 显示当前卡片的详细信息
    
     // 先统一把特殊样式清掉
