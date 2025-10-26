@@ -18,9 +18,10 @@
 			overflow: hidden;
 		}
 
+		/*左侧菜单*/
 		.editorMenu {
 			position: absolute;
-			top: 0;
+			top: 120px;
 			left: 0;
 			width: 300px;
 			height: 100%;
@@ -162,7 +163,7 @@
 		/*右侧菜单*/
 		.card-menu {
 			position: absolute;
-			top: 0;
+			top: 120px;
 			right: 0;
 			width: 300px;
 			height: 100%;
@@ -175,19 +176,28 @@
 		}
 
 		/*上侧变量栏*/
-		.variable-bar {
-			position: absolute;
+		#container {
+			display: flex;
+			align-items: center;
 			top: 0;
 			left: 0;
-			width: 100%;
-			height: 100px;
-			background-color: #1d1e21;
-			color: #fff;
-			/*位置在屏幕最左侧，靠左侧*/
-			/*纵向排布*/
+			flex-wrap: wrap;
+			background: #010208;
+			height: 120px;
 			display: flex;
+			align-items: center;
 			gap: 10px;
-			flex-direction: row;
+			margin-top: 20px;
+			flex-wrap: wrap;
+			display: flex;
+			/* 横向排列子元素 */
+			flex-wrap: nowrap;
+			/* 强制不换行 */
+			overflow-x: auto;
+			/* 内容超出时出现横向滚动条 */
+			gap: 10px;
+
+			margin-top: 20px;
 		}
 
 		/*判断卡片的特殊样式*/
@@ -219,6 +229,34 @@
 			cursor: pointer;
 			font-size: 14px;
 		}
+
+		/*变量方块*/
+		/**/
+		.variety_box {
+			flex: 0 0 auto;
+			/*方块不伸缩*/
+			width: 160px;
+			height: 100px;
+			background: #a6b4e8;
+			color: #181b20;
+			align-items: center;
+			justify-content: center;
+			border-radius: 6px;
+			font-family: sans-serif;
+			display: flex;
+
+		}
+
+		.variety_Button {
+			width: 80px;
+			height: 60px;
+			background: #2196F3;
+			color: #fff;
+			border: none;
+			border-radius: 4px;
+			cursor: pointer;
+
+		}
 	</style>
 </head>
 
@@ -235,15 +273,10 @@
 
 	<div class="editorMenu">
 		<input type="text" id="searchInput" placeholder="搜索卡片">
-		<button id="addCardBtn" class="card">添加变量</button>
-		<button id="deleteCardBtn" class="card">删除卡片</button>
-		<button id="saveBtn" class="card">保存</button>
 		<button id="StartBtn" class="card" onclick="startcard()">开始</button>
-		<button id="loadBtn" class="card">创建变量</button>
 		<input id="userInput" type="text" placeholder="请输入内容">
 		<button id="submitBtn">提交</button>
 	</div>
-	<div class="condition-card" ,id='condition-card'>ahhaah</div>
 	<!-- 右侧菜单 -->
 	<div class="card-menu">
 
@@ -266,11 +299,11 @@
 			<label style="margin-left:20px;">
 				<input type="radio" name="cond" value="相等"> 相等
 			</label>
-			<br>   <!-- 手动换行 -->
+			<br> <!-- 手动换行 -->
 			<label style="margin-left:20px;">
 				<input type="radio" name="cond" value="大于"> 大于
 			</label>
-						<br>   <!-- 手动换行 -->
+			<br> <!-- 手动换行 -->
 			<label style="margin-left:20px;">
 				<input type="radio" name="cond" value="小于"> 小于
 			</label>
@@ -278,14 +311,8 @@
 	</div>
 	<!--TODO-->
 	<!-- 上侧变量栏 -->
-	<div class="variable-bar">
-		<h3>变量栏</h3>
-		<ul id="variableList">
-			<!-- 变量列表 -->
-			<li>变量1: 0</li>
-			<li>变量2: 0</li>
-			<!-- 更多变量 -->
-		</ul>
+	<div id="container">
+		<button id="addBtn" class="variety_Button">点我新增 DIV</button>
 	</div>
 
 
@@ -365,8 +392,76 @@
 
 		init();
 		let cardsType = [];
-		
-		
+
+		const btn = document.getElementById('addBtn');
+		const container = document.getElementById('container');
+		let count = 0;
+
+		btn.addEventListener('click', () => {
+			count++;
+			const div = document.createElement('div');
+			div.className = 'variety_box';
+			div.textContent = count;
+			container.appendChild(div);
+		});
+		/*拓扑序*/
+		function topologicalSort(links, cards) {
+			// 创建一个入度为0的节点的列表
+			const inDegree = {};
+			const graph = {};
+
+			// 初始化每个节点的入度为0
+			cards.forEach(card => {
+				inDegree[card.id] = 0;
+				graph[card.id] = [];
+			});
+
+			// 计算每个节点的入度，并构建邻接表
+			links.forEach(link => {
+				const sourceId = link.source.node.split('-')[0];
+				const targetId = link.target.node.split('-')[0];
+
+				if (!graph[sourceId].includes(targetId)) {
+					graph[sourceId].push(targetId);
+				}
+				inDegree[targetId]++;
+			});
+
+			// 创建一个队列，存储所有入度为0的节点
+			const queue = Object.keys(inDegree).filter(id => inDegree[id] === 0);
+
+			const sortedOrder = [];
+
+			// 当队列不为空时，取出一个节点，并将其相邻节点的入度减1，如果相邻节点的入度变为0，则加入队列
+			while (queue.length) {
+				const cardId = queue.shift();
+				sortedOrder.push(cardId);
+
+				// 减少相邻节点的入度
+				graph[cardId].forEach(neighbour => {
+					inDegree[neighbour]--;
+					if (inDegree[neighbour] === 0) {
+						queue.push(neighbour);
+					}
+				});
+			}
+
+			// 如果排序后的节点数等于图中的节点数，则返回排序结果，否则说明图中存在环
+			if (sortedOrder.length === cards.length) {
+				return sortedOrder;
+			} else {
+				throw new Error('图中存在环，无法进行拓扑排序');
+			}
+		}
+
+		// 使用示例
+		try {
+			const order = topologicalSort(links, cardLinklist);
+			console.log('拓扑排序结果:', order);
+		} catch (error) {
+			console.error(error.message);
+		}
+		/*打印所有连接*/
 		document.getElementById('submitBtn').addEventListener('click', function () {
 			const input = document.getElementById('userInput').value;
 			console.log('用户输入的内容:', input);
@@ -375,6 +470,8 @@
 			printLinks(links);
 			console.log(currentCardData);
 			// 在这里你可以调用addCard函数或其他处理函数
+			order = topologicalSort(links, cardLinklist);
+			console.log('拓扑排序结果:', order);
 		});
 
 
