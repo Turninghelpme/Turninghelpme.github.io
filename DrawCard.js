@@ -1,3 +1,9 @@
+/// This file is used to generate the SVG cards for the game.
+///大佬的代码能不动就不动。
+///这股力量不属于我们，请不要再动它。
+///除非要加东西
+//引用Variables.js文件
+//import { cardLinklist } from './Variables.js';
 function drawCards() {
     const cardsContainer = document.getElementById('cardsContainer');
     cardsContainer.innerHTML = ''; // 清除现有的卡片
@@ -488,6 +494,7 @@ function moveCard(e) {
     const svgRect = svgContainer.getBoundingClientRect();
     currentCard.x = e.clientX - svgRect.left - dragOffsetX;
     currentCard.y = e.clientY - svgRect.top - dragOffsetY;
+    //菜单要调用下面这句话
     currentCardData = currentCard;
     // Update link positions associated with the currentCard
     links.forEach(link => {
@@ -788,7 +795,6 @@ function populateCardTypeList(mouseX, mouseY, sourceNode) {
     }
 }
 
-
 function showCardCreationModal(mouseX, mouseY, sourceNode) {
     populateCardTypeList(mouseX, mouseY, sourceNode); // 填充卡片类型列表
     const modal = document.getElementById('card-creation-modal');
@@ -802,9 +808,7 @@ function showCardCreationModal(mouseX, mouseY, sourceNode) {
         };
         modal.appendChild(cancelButton);
     }
-
-
-
+    
     // 设置弹出框的位置
     modal.style.left = mouseX + 'px';
     modal.style.top = mouseY + 'px';
@@ -915,11 +919,7 @@ function startcard() {
 
 }
 //TODO
-function addVar() {
-    Var.push({
 
-    })
-}
 
 //当cardLinklist被点击时触发
 //绘制右侧菜单
