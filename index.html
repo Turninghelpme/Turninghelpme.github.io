@@ -2,480 +2,396 @@
 <html lang="zh-cn">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blueprint</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
 
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+        .editorMenu {
+            position: absolute;
+            top: 140px;
+            left: 0;
+            width: 300px;
+            height: 100%;
+            background-color: #1d1e21;
+            color: #fff;
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
 
-	<title>Blueprint</title>
+        input[type="text"] {
+            width: 140px;
+            height: 30px;
+            border: none;
+            border-radius: 5px;
+            padding: 5px;
+            background-color: #1d1e21;
+            color: #d3d6de;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
 
-	<style>
-		body,
-		html {
-			margin: 0;
-			padding: 0;
-			width: 100%;
-			height: 100%;
-			overflow: hidden;
-		}
+        button.card {
+            width: 300px;
+            height: 30px;
+            border: none;
+            display: inline-block;
+            border-radius: 5px;
+            background-color: #333;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+        }
 
-		/*左侧菜单*/
-		.editorMenu {
-			position: absolute;
-			top: 120px;
-			left: 0;
-			width: 300px;
-			height: 100%;
-			background-color: #1d1e21;
-			color: #fff;
-			/*位置在屏幕最右侧，靠右侧*/
-			display: flex;
-			gap: 10px;
-			flex-direction: column;
-		}
+        button:hover {
+            background-color: #555;
+        }
 
+        #card-creation-modal {
+            border: 1px solid #444;
+            background: linear-gradient(145deg, #333, #555);
+            padding: 5px;
+            z-index: 100;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 0;
+            user-select: none;
+        }
 
-		/*输入框*/
-		input[type="text"] {
-			width: 300px;
-			height: 30px;
-			border: none;
-			border-radius: 5px;
-			padding: 5px;
-			background-color: #1d1e21;
-			color: #d3d6de;
-			font-size: 14px;
-			box-sizing: border-box;
+        #card-type-list {
+            padding-left: 0px;
+        }
 
-		}
+        #card-type-list li {
+            list-style: none;
+            padding: 8px 15px;
+            border-bottom: 1px solid #666;
+            color: #ddd;
+            cursor: pointer;
+            margin-left: 0;
+        }
 
-		/*按钮*/
-		button.card {
-			width: 300px;
-			height: 30px;
-			border: none;
-			/*横向排布*/
-			display: inline-block;
+        #card-type-list li:hover,
+        #card-type-list li:focus {
+            background-color: #777;
+            color: #fff;
+        }
 
-			border-radius: 5px;
-			background-color: #333;
-			color: #fff;
-			font-size: 14px;
-			cursor: pointer;
-		}
+        #card-type-list li:last-child {
+            border-bottom: none;
+        }
 
-		/*按钮 hover 样式*/
-		button:hover {
-			background-color: #555;
-		}
+        .grid-background {
+            background-color: #292929;
+            background-image:
+                linear-gradient(to right, black 1px, transparent 1px),
+                linear-gradient(to bottom, black 1px, transparent 1px),
+                linear-gradient(to right, #404040 1px, transparent 1px),
+                linear-gradient(to bottom, #404040 1px, transparent 1px);
+            background-size:
+                100px 100px,
+                100px 100px,
+                10px 10px,
+                10px 10px;
+            width: 100%;
+            height: 100%;
+        }
 
-		/* 弹窗容器样式 */
-		#card-creation-modal {
-			border: 1px solid #444;
-			background: linear-gradient(145deg, #333, #555);
-			padding: 5px;
-			z-index: 100;
-			box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-			border-radius: 5px;
-			overflow: hidden;
-			margin: 0;
-			user-select: none;
-		}
+        .draggable {
+            cursor: grab;
+        }
 
-		#card-type-list {
+        .node {
+            cursor: pointer;
+        }
 
-			padding-left: 0px;
-		}
+        .link {
+            stroke: black;
+            stroke-width: 2;
+        }
 
-		/* 列表项基础样式 */
-		#card-type-list li {
-			list-style: none;
-			/* 去除列表项目符号 */
-			padding: 8px 15px;
-			/* 减少垂直内边距使其更紧凑 */
-			border-bottom: 1px solid #666;
-			/* 暗色底部边框线 */
-			color: #ddd;
-			/* 暗色系字体颜色 */
-			cursor: pointer;
-			/* 鼠标指针样式 */
-			margin-left: 0;
-			/* 消除左边间隙 */
+        .card {
+            stroke-width: 1;
+            user-select: none;
+        }
 
-		}
+        text {
+            pointer-events: none;
+            user-select: none;
+        }
 
-		/* 列表项高亮样式 */
-		#card-type-list li:hover,
-		#card-type-list li:focus {
-			background-color: #777;
-			/* 暗色背景颜色 */
-			color: #fff;
-			/* 高亮字体颜色 */
-		}
+        .card-menu {
+            position: absolute;
+            top: 120px;
+            right: 0;
+            width: 300px;
+            height: 100%;
+            background-color: #1d1e21;
+            color: #fff;
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
 
-		/* 最后一个列表项的底部边框 */
-		#card-type-list li:last-child {
-			border-bottom: none;
-		}
+        #container {
+            display: flex;
+            align-items: center;
+            top: 0;
+            left: 0;
+            background: #010208;
+            height: 120px;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+        }
 
-		.grid-background {
-			background-color: #292929;
-			background-image:
-				linear-gradient(to right, black 1px, transparent 1px),
-				linear-gradient(to bottom, black 1px, transparent 1px),
-				linear-gradient(to right, #404040 1px, transparent 1px),
-				linear-gradient(to bottom, #404040 1px, transparent 1px);
-			background-size:
-				100px 100px,
-				100px 100px,
-				10px 10px,
-				10px 10px;
-			width: 100%;
-			height: 100%;
-		}
+        .condition_card {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin: 8px 0;
+            font-weight: bold;
+        }
 
-		.draggable {
-			cursor: grab;
-		}
+        .condition_box {
+            bottom: 30px;
+            right: 3px;
+            display: none;
+        }
 
-		.node {
+        .condition_box_button {
+            padding: 4px 12px;
+            background-color: #2196f3;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            display: none;
+        }
 
-			cursor: pointer;
-		}
+        .condition-radio-group label {
+            cursor: pointer;
+            font-size: 14px;
+        }
 
-		.link {
-			stroke: black;
-			stroke-width: 2;
-		}
+        .variety_box {
+            flex: 0 0 auto;
+            width: 160px;
+            height: 120px;
+            background: #a6b4e8;
+            color: #181b20;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            margin: 10px;
+            position: relative;
+        }
 
-		.card {
-			/* fill: lightgrey;
-			stroke: black; */
+        .variety_input {
+            width: 10%;
+            height: 20px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 5px;
+            background-color: #fff;
+            color: #000;
+            font-size: 12px;
+            box-sizing: border-box;
+            overflow: hidden;
+            white-space: nowrap;
+        }
 
-			stroke-width: 1;
-			user-select: none;
-		}
-
-		text {
-			pointer-events: none;
-			user-select: none;
-		}
-
-		/*右侧菜单*/
-		.card-menu {
-			position: absolute;
-			top: 120px;
-			right: 0;
-			width: 300px;
-			height: 100%;
-			background-color: #1d1e21;
-			color: #fff;
-			/*位置在屏幕最右侧，靠右侧*/
-			display: flex;
-			gap: 10px;
-			flex-direction: column;
-		}
-
-		/*上侧变量栏*/
-		#container {
-			display: flex;
-			align-items: center;
-			top: 0;
-			left: 0;
-			flex-wrap: wrap;
-			background: #010208;
-			height: 120px;
-			display: flex;
-			align-items: center;
-			gap: 10px;
-			margin-top: 20px;
-			flex-wrap: wrap;
-			display: flex;
-			/* 横向排列子元素 */
-			flex-wrap: nowrap;
-			/* 强制不换行 */
-			overflow-x: auto;
-			/* 内容超出时出现横向滚动条 */
-			gap: 10px;
-
-			margin-top: 20px;
-		}
-
-		/*判断卡片的特殊样式*/
-		.condition_card {
-			background: #e3f2fd;
-			border: 2px solid #2196f3;
-			padding: 12px 16px;
-			border-radius: 4px;
-			margin: 8px 0;
-			font-weight: bold;
-		}
-
-		.condition_box {
-			bottom: 30px;
-			right: 3px;
-			display: none;
-		}
-
-		.condition_box_button {
-			padding: 4px 12px;
-			background-color: #2196f3;
-			color: #fff;
-			border: none;
-			border-radius: 4px;
-			display: none;
-		}
-
-		.condition-radio-group label {
-			cursor: pointer;
-			font-size: 14px;
-		}
-
-		/*变量方块*/
-		/**/
-		.variety_box {
-			flex: 0 0 auto;
-			/*方块不伸缩*/
-			width: 160px;
-			height: 100px;
-			background: #a6b4e8;
-			color: #181b20;
-			align-items: center;
-			justify-content: center;
-			border-radius: 6px;
-			font-family: sans-serif;
-			display: flex;
-
-		}
-
-		.variety_Button {
-			width: 80px;
-			height: 60px;
-			background: #2196F3;
-			color: #fff;
-			border: none;
-			border-radius: 4px;
-			cursor: pointer;
-
-		}
-	</style>
+        .delete-btn {
+            background: red;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+    </style>
 </head>
 
 <body>
+    <!-- 弹窗容器 -->
+    <div id="card-creation-modal"
+        style="display:none; position: absolute; border: 1px solid #ccc; background-color: #fff; padding: 10px; z-index: 100;">
+        <ul id="card-type-list"></ul>
+    </div>
+    <div class="editorMenu">
+        <input type="text" id="searchInput" placeholder="搜索卡片">
+        <button id="StartBtn" class="card" onclick="startcard()">开始</button>
+        <input id="userInput" type="text" placeholder="请输入内容">
+        <button id="uploadBtn">上传</button>
+        <button id="downloadBtn">下载</button>
+        <button id="submitBtn">提交</button>
+    </div>
+    <div class="card-menu">
+        <h3>卡片类型</h3>
+        <ul id="currentCardData">
+            <li id="currentCardData-title">当前卡片信息</li>
+            <li id="currentCardData-id">ID: </li>
+            <li id="currentCardData-type">类型: </li>
+            <li id="currentCardData-nodes">节点: </li>
+            <li id="currentCardData-position">位置: </li>
+            <li id="currentCardData-titlebarcolor">标题栏颜色: </li>
+        </ul>
+        <div class="condition-radio-group" style="display:none; text-align:right; margin-top:8px;">
+            <label style="margin-left:20px;">
+                <input type="radio" name="cond" value="相等"> 相等
+            </label>
+            <br>
+            <label style="margin-left:20px;">
+                <input type="radio" name="cond" value="大于"> 大于
+            </label>
+            <br>
+            <label style="margin-left:20px;">
+                <input type="radio" name="cond" value="小于"> 小于
+            </label>
+        </div>
+    </div>
+    <div id="container">
+        <button id="addBtn" class="variety_Button">点我新增 DIV</button>
+    </div>
+    <svg style="width: 100%;height: 100%;" id="svgContainer" class="grid-background">
+        <g id="linksContainer"></g>
+        <g id="cardsContainer"></g>
+    </svg>
+    <script src="CardKind.js"></script>
+    <script src="DrawCard.js"></script>
+    <script src="judgeCard.js"></script>
+    <script src="gcc.js"></script>
+    <script src="ValueButton.js"></script>
+    <script>
+        let cards = nodekind();
+        let cardLinklist = [
+            {
+                id: 'card0',
+                x: 0,
+                y: 0,
+                label: 'Start',
+                type: "start",
+                nodes: [{
+                    type: "out",
+                    level: 0,
+                    enumType: 'call',
+                    color: '#fff',
+                    multiConnected: 1
+                }],
+                titleBarColor: ['#84fab0', '#8fd3f4']
+            }
+        ];
+        let Var = [
+            {
+                id: 1,
+                name: 'NULL',
+                type: 'int',
+                value: 0,
+            }
+        ];
+        let links = [];
+        let a = 0;
+        let currentLink = null;
+        let isDragging = false;
+        let isLinking = false;
+        let dragOffsetX, dragOffsetY;
+        let currentCardData = cardLinklist[0];
+        let isPanning = false;
+        let startPan = { x: 0, y: 0 };
+        let currentPan = { x: 0, y: 0 };
 
 
-	<!-- 弹窗容器 -->
-	<div id="card-creation-modal"
-		style="display:none; position: absolute; border: 1px solid #ccc; background-color: #fff; padding: 10px; z-index: 100;">
-		<!-- 搜索结果列表 -->
-		<ul id="card-type-list"></ul>
-	</div>
+        const btn = document.getElementById('addBtn');
+        const container = document.getElementById('container');
+        let count = 0;
+        //let VarCount = 0;
+        init();
+        InitVar(Var);
+        ValueButton(Var);
+
+        try {
+            const order = topologicalSort(links, cardLinklist);
+            console.log('拓扑排序结果:', order);
+        } catch (error) {
+            console.error(error.message);
+        }
+
+        document.getElementById('submitBtn').addEventListener('click', function () {
+            console.log(Var);
+            console.log(Var.length);
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', function () {
+            const dataToDownload = {
+                Var: Var,
+                cardLinklist: cardLinklist,
+                links: links
+            };
+            const jsonString = JSON.stringify(dataToDownload, null, 2);
+            downloadTextAsFile(jsonString, 'data.json');
+        });
+
+        document.getElementById('uploadBtn').addEventListener('click', function () {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.onchange = function () {
+                let file = input.files[0];
+                if (file) {
+                    console.log('正在上传文件:', file.name);
+                    clearAll(Var);
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        const jsonString = e.target.result;
+                        const data = JSON.parse(jsonString);
+                        clearAll(Var);
+                        Var = data.Var;
+                        cardLinklist = data.cardLinklist;
+                        links = data.links;
+                        init();
+                        InitVar(Var);
+                        //VarCount = Var.length;
+                        console.log('数据已上传并恢复:', data);
+                        //bindInputEvents(Var);
+                        //绑定输入事件
+                        //console.log('VarCount:', VarCount);
+                        //console.log('Var:', Var);
+                        
+                        console.log('Var:', Var);
+                    };
+                    reader.readAsText(file);
+                console.log('文件:', file);
+                }
+            };
+            input.click();
 
 
-	<div class="editorMenu">
-		<input type="text" id="searchInput" placeholder="搜索卡片">
-		<button id="StartBtn" class="card" onclick="startcard()">开始</button>
-		<input id="userInput" type="text" placeholder="请输入内容">
-		<button id="submitBtn">提交</button>
-	</div>
-	<!-- 右侧菜单 -->
-	<div class="card-menu">
-
-		<h3>卡片类型</h3>
-		<!-- 位置在屏幕最右侧，靠右侧-->
-		<!--显示刚才点击的卡片信息-->
-		<ul id="currentCardData">
-			<li id="currentCardData-title">当前卡片信息</li>
-			<li id="currentCardData-id">ID: </li>
-			<li id="currentCardData-type">类型: </li>
-			<li id="currentCardData-nodes">节点: </li>
-			<li id="currentCardData-position">位置: </li>
-			<li id="currentCardData-titlebarcolor">标题栏颜色: </li>
-
-
-		</ul>
-		<!--条件设定按钮-->
-		<!--button id="conditionBtn" class="card">条件设定</button-->
-		<div class="condition-radio-group" style="display:none; text-align:right; margin-top:8px;">
-			<label style="margin-left:20px;">
-				<input type="radio" name="cond" value="相等"> 相等
-			</label>
-			<br> <!-- 手动换行 -->
-			<label style="margin-left:20px;">
-				<input type="radio" name="cond" value="大于"> 大于
-			</label>
-			<br> <!-- 手动换行 -->
-			<label style="margin-left:20px;">
-				<input type="radio" name="cond" value="小于"> 小于
-			</label>
-		</div>
-	</div>
-	<!--TODO-->
-	<!-- 上侧变量栏 -->
-	<div id="container">
-		<button id="addBtn" class="variety_Button">点我新增 DIV</button>
-	</div>
-
-
-
-	<!-- SVG 容器 -->
-	<svg style="width: 100%;height: 100%;" id="svgContainer" class="grid-background">
-		<g id="linksContainer"></g> <!-- 用于存放线条 -->
-		<g id="cardsContainer"></g> <!-- 用于存放卡片 -->
-	</svg>
-
-	<script src="CardKind.js"></script>
-	<script src="DrawCard.js"></script>
-	<script src="judgeCard.js"></script>
-	<script>
-
-
-		let cards = nodekind();
-
-		let cardmenu = ['start', 'condition', 'call', 'print', 'add', 'subtract', 'multiply',
-			'divide', 'modulus', 'and', 'or', 'not', 'greater_than', 'less_than', 'equal_to', 'if_else',
-			'while_loop', 'for_loop', 'function_definition', 'function_call', 'variable_declaration',
-			'variable_assignment', 'array_creation', 'array_access', 'object_creation', 'object_access',
-			'event_listener', 'event_trigger'
-		];
-
-		let cardLinklist = [
-			{
-				id: 'card0',
-				x: 0,
-				y: 0,
-				label: 'Start',
-				type: "start",
-				nodes: [{
-					type: "out",
-					level: 0,
-					enumType: 'call',
-					color: '#fff',
-					multiConnected: 1
-				},],
-				titleBarColor: ['#84fab0', '#8fd3f4']
-			}
-		];
-		//变量栏
-		let Var = [
-			{
-				id: 'var1',
-				name: '变量1',
-				type: 'int',
-				value: 0,
-			}
-		];
-
-		//连接数组
-		let links = [];
-
-		let currentLink = null;
-		let isDragging = false;
-		let isLinking = false;
-		let dragOffsetX, dragOffsetY;
-
-		/*现在点击的卡片*/
-		let currentCardData = cardLinklist[0];
-
-		// 定义变量来追踪是否正在拖动以及拖动的起始位置
-		let isPanning = false;
-		let startPan = {
-			x: 0,
-			y: 0
-		};
-		/*******是否需要显示特殊块，用来配置卡片的属性******/
-
-		// 用于调整SVG视图窗口的变量
-		let currentPan = {
-			x: 0,
-			y: 0
-		};
-
-		init();
-		let cardsType = [];
-
-		const btn = document.getElementById('addBtn');
-		const container = document.getElementById('container');
-		let count = 0;
-
-		btn.addEventListener('click', () => {
-			count++;
-			const div = document.createElement('div');
-			div.className = 'variety_box';
-			div.textContent = count;
-			container.appendChild(div);
-		});
-		/*拓扑序*/
-		function topologicalSort(links, cards) {
-			// 创建一个入度为0的节点的列表
-			const inDegree = {};
-			const graph = {};
-
-			// 初始化每个节点的入度为0
-			cards.forEach(card => {
-				inDegree[card.id] = 0;
-				graph[card.id] = [];
-			});
-
-			// 计算每个节点的入度，并构建邻接表
-			links.forEach(link => {
-				const sourceId = link.source.node.split('-')[0];
-				const targetId = link.target.node.split('-')[0];
-
-				if (!graph[sourceId].includes(targetId)) {
-					graph[sourceId].push(targetId);
-				}
-				inDegree[targetId]++;
-			});
-
-			// 创建一个队列，存储所有入度为0的节点
-			const queue = Object.keys(inDegree).filter(id => inDegree[id] === 0);
-
-			const sortedOrder = [];
-
-			// 当队列不为空时，取出一个节点，并将其相邻节点的入度减1，如果相邻节点的入度变为0，则加入队列
-			while (queue.length) {
-				const cardId = queue.shift();
-				sortedOrder.push(cardId);
-
-				// 减少相邻节点的入度
-				graph[cardId].forEach(neighbour => {
-					inDegree[neighbour]--;
-					if (inDegree[neighbour] === 0) {
-						queue.push(neighbour);
-					}
-				});
-			}
-
-			// 如果排序后的节点数等于图中的节点数，则返回排序结果，否则说明图中存在环
-			if (sortedOrder.length === cards.length) {
-				return sortedOrder;
-			} else {
-				throw new Error('图中存在环，无法进行拓扑排序');
-			}
-		}
-
-		// 使用示例
-		try {
-			const order = topologicalSort(links, cardLinklist);
-			console.log('拓扑排序结果:', order);
-		} catch (error) {
-			console.error(error.message);
-		}
-		/*打印所有连接*/
-		document.getElementById('submitBtn').addEventListener('click', function () {
-			const input = document.getElementById('userInput').value;
-			console.log('用户输入的内容:', input);
-			console.log(cardLinklist);
-			console.log(links);
-			printLinks(links);
-			console.log(currentCardData);
-			// 在这里你可以调用addCard函数或其他处理函数
-			order = topologicalSort(links, cardLinklist);
-			console.log('拓扑排序结果:', order);
-		});
-
-
-	</script>
+        });
+    </script>
 </body>
 
 </html>
