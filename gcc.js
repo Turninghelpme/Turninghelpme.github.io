@@ -17,7 +17,40 @@ function downloadTextAsFile(text, filename) {
     URL.revokeObjectURL(url);
 }
 
+function uploadTextAsFile() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.onchange = function () {
+        let file = input.files[0];
+        if (file) {
+            console.log('正在上传文件:', file.name);
+            clearAll(Var);
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const jsonString = e.target.result;
+                const data = JSON.parse(jsonString);
+                clearAll(Var);
+                Var = data.Var;
+                cardLinklist = data.cardLinklist;
+                links = data.links;
+                init();
+                InitVar(Var);
+                //VarCount = Var.length;
+                console.log('数据已上传并恢复:', data);
+                //bindInputEvents(Var);
+                //绑定输入事件
+                //console.log('VarCount:', VarCount);
+                //console.log('Var:', Var);
 
+                console.log('Var:', Var);
+            };
+            reader.readAsText(file);
+            console.log('文件:', file);
+        }
+    };
+    input.click();
+
+}
 
 function topologicalSort(links, cards) {
     // 创建一个入度为0的节点的列表
