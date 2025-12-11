@@ -287,23 +287,26 @@
     <script src="judgeCard.js"></script>
     <script src="gcc.js"></script>
     <script src="ValueButton.js"></script>
+
     <script>
-        let cards = nodekind();
+        //let cards = nodekind();
+        let cards = getCardKind();
+        //let cards = getStdCardKind();
         let cardLinklist = [
             {
-                id: 'card0',
-                x: 0,
-                y: 0,
-                label: 'Start',
-                type: "start",
+                id: 'card0', 
+                x: 0, 
+                y: 0, 
+                label: 'Start', 
+                type: 'start', 
                 nodes: [{
-                    type: "out",
-                    level: 0,
-                    enumType: 'call',
-                    color: '#fff',
-                    multiConnected: 1
-                }],
-                titleBarColor: ['#84fab0', '#8fd3f4']
+                    type: 'out', 
+                    level: 0, 
+                    enumType: "call", 
+                    label: "call", 
+                    color: "#fff", 
+                    multiConnected: 1 }], 
+                    titleBarColor: [ "#84fab0", "#8fd3f4" ]
             }
         ];
         let Var = [
@@ -333,7 +336,7 @@
         init();
         InitVar(Var);
         ValueButton(Var);
-
+        
         try {
             const order = topologicalSort(links, cardLinklist);
             console.log('拓扑排序结果:', order);
@@ -344,6 +347,8 @@
         document.getElementById('submitBtn').addEventListener('click', function () {
             console.log(Var);
             console.log(Var.length);
+            console.log(cardLinklist);
+            console.log(links);
         });
 
         document.getElementById('downloadBtn').addEventListener('click', function () {
@@ -357,39 +362,7 @@
         });
 
         document.getElementById('uploadBtn').addEventListener('click', function () {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.onchange = function () {
-                let file = input.files[0];
-                if (file) {
-                    console.log('正在上传文件:', file.name);
-                    clearAll(Var);
-                    const reader = new FileReader();
-                    reader.onload = function (e) {
-                        const jsonString = e.target.result;
-                        const data = JSON.parse(jsonString);
-                        clearAll(Var);
-                        Var = data.Var;
-                        cardLinklist = data.cardLinklist;
-                        links = data.links;
-                        init();
-                        InitVar(Var);
-                        //VarCount = Var.length;
-                        console.log('数据已上传并恢复:', data);
-                        //bindInputEvents(Var);
-                        //绑定输入事件
-                        //console.log('VarCount:', VarCount);
-                        //console.log('Var:', Var);
-                        
-                        console.log('Var:', Var);
-                    };
-                    reader.readAsText(file);
-                console.log('文件:', file);
-                }
-            };
-            input.click();
-
-
+            uploadTextAsFile();
         });
     </script>
 </body>
