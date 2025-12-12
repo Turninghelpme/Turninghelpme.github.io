@@ -5,7 +5,7 @@
         ,
         { "id": "card0", "x": 0, "y": 0, "label": "变量", "type": "变量", "nodes": [ { "type": "in", "level": 0, "enumType": "double", "label": "out", "color": "#fff", "multiConnected": 1 }, { "type": "out", "level": 0, "enumType": "指针", "label": "指针", "color": "#ffff", "multiConnected": 1 } ], "titleBarColor": [ "#84fab0", "#8fd3f8" ] }
         ,
-        { "id": "card0", "x": 0, "y": 0, "label": "常数", "type": "常数", "nodes": [ { "type": "in", "level": 0, "enumType": "double", "label": "double", "color": "#fff", "multiConnected": 1 } ], "titleBarColor": [ "#84fab0", "#8fd3f4" ] }
+        { "id": "card0", "x": 0, "y": 0, "label": "常数", "type": "常数", "nodes": [ { "type": "in", "level": 0, "enumType": "double", "label": "double", "color": "#fff","slot": "input", "multiConnected": 1 } ], "titleBarColor": [ "#84fab0", "#8fd3f4" ] }
         ,
         { "id": "card0", "x": 0, "y": 0, "label": "A = B", "type": "赋值", "nodes": [ { "type": "out", "level": 0, "enumType": "call", "label": "call", "color": "#fff", "multiConnected": 1 }, { "type": "in", "level": 0, "enumType": "call", "label": "call", "color": "#ffff", "multiConnected": 1 }, { "type": "out", "level": 1, "enumType": "double", "label": "A", "color": "#ffff", "multiConnected": 1 }, { "type": "out", "level": 2, "enumType": "double", "label": "B", "color": "#ffff", "multiConnected": 1 } ], "titleBarColor": [ "#84fab0", "#8fd3f8" ] }
         ,
