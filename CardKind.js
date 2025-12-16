@@ -1,5 +1,4 @@
 //我真是个baka
-//development
 function getStdCardKind() {
     let stdio_cardkind = [
         { id: "card0", x: 0, y: 0, label: "Start", type: "start", nodes: [ { type: "out", level: 0, enumType: "call", label: "call", color: "#fff", multiConnected: 1 } ], titleBarColor: [ "#84fab0", "#8fd3f4" ] },
