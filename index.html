@@ -350,6 +350,8 @@
             console.log(Var.length);
             console.log(cardLinklist);
             console.log(links);
+            const order = topologicalSort(links, cardLinklist);
+            console.log('拓扑排序结果:', order);
         });
 
         document.getElementById('downloadBtn').addEventListener('click', function () {
