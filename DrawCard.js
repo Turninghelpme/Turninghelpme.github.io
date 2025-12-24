@@ -160,7 +160,8 @@ function drawCards() {
                 group.appendChild(nodeLabel);
 
             }
-
+            /*获取输入框*/
+            /*保存在value中*/
             switch (node.slot) {
                 case 'input':
                     const foreignObject = document.createElementNS('http://www.w3.org/2000/svg',
