@@ -100,3 +100,18 @@ function topologicalSort(links, cards) {
         throw new Error('图中存在环，无法进行拓扑排序');
     }
 }
+
+function theCompiler() {
+
+    const order = topologicalSort(links, cardLinklist);
+    // 输出排序结果
+    console.log('拓扑排序结果:', order);
+    const compiledCode = order.map(cardId => {
+
+        const card = cardLinklist.find(card => card.id === cardId);
+        return card.code;
+        }
+        ).join('\n');
+        console.log('编译结果:', compiledCode);
+    // 下载编译结果
+}
