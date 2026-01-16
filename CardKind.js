@@ -13,6 +13,7 @@ function getStdCardKind() {
 let cards = [];
 
 function getCardKind() {
+    /*
     fetch('./lib/stdCard.json')
         .then(response => {
             if (!response.ok) {
@@ -43,6 +44,9 @@ function getCardKind() {
             cards = getDefaultCards();
             console.log('使用默认卡片配置');
         });
+        */
+    cards = getDefaultCards();
+    console.log('使用默认卡片配置');
 }
 
 // 默认卡片配置（当JSON加载失败时使用）
