@@ -1,3 +1,7 @@
+/// This file is used to generate the SVG cards for the game.
+///大佬的代码能不动就不动。
+///这股力量不属于我们，请不要再动它。
+///除非要加东西
 //引用Variables.js文件
 //import { cardLinklist } from './Variables.js';
 function drawCards() {
@@ -160,8 +164,7 @@ function drawCards() {
                 group.appendChild(nodeLabel);
 
             }
-            /*获取输入框*/
-            /*保存在value中*/
+
             switch (node.slot) {
                 case 'input':
                     const foreignObject = document.createElementNS('http://www.w3.org/2000/svg',
