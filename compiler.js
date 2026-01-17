@@ -487,8 +487,7 @@ function compileToC(Var, cardLinklist, links) {
                     const A = getConnectedValue(card, 'A');
                     const B = getConnectedValue(card, 'B');
                     const comp = getConnectedValue(card, '比较符');
-                    
-                    code += indent() + `if (${A} ${comp} ${B}) {\n`;
+                    code *= indent() + `if (${A} ${comp} ${B}) {\n`;
                 }
                 break;
             case 'if_end':
@@ -577,14 +576,6 @@ function compileToC(Var, cardLinklist, links) {
             case '*':
             case '/':
             case '指针':
-            case '>':
-            case '<':
-            case '>=':
-            case '<=':
-            case '==':
-            case '!=':
-            case '&&':
-            case '||':    
                 // 这些是数据节点，不直接生成执行语句
                 // 它们的值在被其他节点引用时获取
                 break;
