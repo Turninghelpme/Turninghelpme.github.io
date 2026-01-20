@@ -17,6 +17,75 @@ function downloadTextAsFile(text, filename) {
     URL.revokeObjectURL(url);
 }
 
+function parseNodeId(nodeId) {
+    if (typeof nodeId !== 'string') return null;
+    const m = nodeId.match(/^(card[^-]*)-node(\d+)$/);
+    if (!m) return null;
+    return { cardId: m[1], nodeIndex: parseInt(m[2], 10) - 1, nodeNum: parseInt(m[2], 10) };
+}
+
+function getNodeWorldPosition(card, nodeIndex) {
+    const node = card?.nodes?.[nodeIndex];
+    if (!node) return null;
+    const nodeSpacing = 50;
+    const topBottomPadding = 20;
+    const titleBarHeight = 30;
+    const x = (card.x ?? 0) + (node.type === 'in' ? 0 : 150);
+    const y = 30 + (card.y ?? 0) + topBottomPadding + (node.level + 1) * nodeSpacing - nodeSpacing / 2;
+    return { x, y };
+}
+
+function normalizeImportedGraph(data) {
+    const importedCards = Array.isArray(data?.cardLinklist) ? data.cardLinklist : [];
+    const importedLinks = Array.isArray(data?.links) ? data.links : [];
+
+    const oldIdToCardIndices = new Map();
+    importedCards.forEach((card, idx) => {
+        const oldId = typeof card?.id === 'string' ? card.id : '';
+        if (!oldIdToCardIndices.has(oldId)) oldIdToCardIndices.set(oldId, []);
+        oldIdToCardIndices.get(oldId).push(idx);
+    });
+
+    const newIdsByIndex = importedCards.map((_, idx) => `card${idx}`);
+
+    const remapEndpoint = (endpoint) => {
+        const parsed = parseNodeId(endpoint?.node);
+        if (!parsed) return;
+
+        const candidateIndices = oldIdToCardIndices.get(parsed.cardId) || [];
+        if (candidateIndices.length === 0) return;
+
+        let chosenIdx = candidateIndices[0];
+        if (candidateIndices.length > 1 && typeof endpoint?.x === 'number' && typeof endpoint?.y === 'number') {
+            let bestDist = Infinity;
+            candidateIndices.forEach((idx) => {
+                const pos = getNodeWorldPosition(importedCards[idx], parsed.nodeIndex);
+                if (!pos) return;
+                const dx = pos.x - endpoint.x;
+                const dy = pos.y - endpoint.y;
+                const d2 = dx * dx + dy * dy;
+                if (d2 < bestDist) {
+                    bestDist = d2;
+                    chosenIdx = idx;
+                }
+            });
+        }
+
+        endpoint.node = `${newIdsByIndex[chosenIdx]}-node${parsed.nodeNum}`;
+    };
+
+    importedLinks.forEach((link) => {
+        remapEndpoint(link?.source);
+        remapEndpoint(link?.target);
+    });
+
+    importedCards.forEach((card, idx) => {
+        card.id = newIdsByIndex[idx];
+    });
+
+    return { Var: Array.isArray(data?.Var) ? data.Var : [], cardLinklist: importedCards, links: importedLinks };
+}
+
 function uploadTextAsFile() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -29,10 +98,11 @@ function uploadTextAsFile() {
             reader.onload = function (e) {
                 const jsonString = e.target.result;
                 const data = JSON.parse(jsonString);
+                const normalized = normalizeImportedGraph(data);
                 clearAll(Var);
-                Var = data.Var;
-                cardLinklist = data.cardLinklist;
-                links = data.links;
+                Var = normalized.Var;
+                cardLinklist = normalized.cardLinklist;
+                links = normalized.links;
                 init();
                 InitVar(Var);
                 //VarCount = Var.length;
