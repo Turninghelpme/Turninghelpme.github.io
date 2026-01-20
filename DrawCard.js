@@ -328,12 +328,13 @@ function drawLinks() {
         path.setAttribute('stroke-width', 5)
         path.setAttribute('fill', 'none');
 
+
         const isCallType = link.source.enumType === 'call';
         if (isCallType) {
             path.setAttribute('stroke-dasharray', '10');
-            path.setAttribute('stroke-dashoffset', '20'); // 初始化为 20
+            path.setAttribute('stroke-dashoffset', '0');
 
-            // 添加动画元素到路径以实现虚线效果
+            // Add animation element to the path for dashed lines
             const animate = document.createElementNS('http://www.w3.org/2000/svg', 'animate');
             animate.setAttribute('attributeName', 'stroke-dashoffset');
             animate.setAttribute('dur', '0.5s');
@@ -342,6 +343,7 @@ function drawLinks() {
             animate.setAttribute('to', '0');
             path.appendChild(animate);
         }
+
 
         let dist;
         // 使用动态计算的控制点距离来定义曲线,根据源点和终点的X坐标差异动态计算控制点的距离
@@ -367,6 +369,7 @@ function drawLinks() {
             linksContainer.appendChild(path);
         }
 
+
         // 计算中点
         const midX = (link.source.x + link.target.x) / 2;
         const midY = (link.source.y + link.target.y) / 2;
@@ -385,14 +388,14 @@ function drawLinks() {
         // 可以选择添加一个×文本在圆圈中间
         const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         text.setAttribute('x', midX);
-        text.setAttribute('y', midY + 4); // 更精确的垂直居中调整
+        text.setAttribute('y', midY + 5); // 轻微调整以垂直居中
         text.setAttribute('text-anchor', 'middle');
         text.setAttribute('fill', 'white');
         text.setAttribute('font-size', '15px');
-        // 删除 pointer-events 属性或将其设置为 auto
-        // text.setAttribute('pointer-events', 'auto');
+        text.setAttribute('pointer-events', 'none'); // 确保点击事件只触发于圆圈上
         text.textContent = '×';
         linksContainer.appendChild(text);
+
     });
 }
 
@@ -409,6 +412,11 @@ function decrementCardIndex(cardStr) {
     return cardStr;
 }
 
+function getCardIdFromNodeId(nodeId) {
+    if (!nodeId) return '';
+    return nodeId.split('-node')[0];
+}
+
 function onSvgContainerClick(e) {
     if (e.target.classList.contains('delete-icon')) {
         const linkIndex = e.target.getAttribute('data-link-level');
@@ -421,8 +429,11 @@ function onSvgContainerClick(e) {
     if (e.target.classList.contains('card-delete-icon')) {
         const cardId = e.target.getAttribute('data-card-id');
         cardLinklist = cardLinklist.filter(card => card.id !== cardId);
-        links = links.filter(link => !(link.source.node.startsWith(cardId) || (link.target && link.target
-            .node.startsWith(cardId))));
+        links = links.filter(link => {
+            const sourceCardId = getCardIdFromNodeId(link.source?.node);
+            const targetCardId = getCardIdFromNodeId(link.target?.node);
+            return sourceCardId !== cardId && targetCardId !== cardId;
+        });
 
         const idxToDelete = parseInt(cardId.replace(/\D/g, ''), 10);
 
@@ -581,7 +592,7 @@ function moveCard(e) {
     currentCardData = currentCard;
     // Update link positions associated with the currentCard
     links.forEach(link => {
-        if (link.source.node.startsWith(currentCard.id)) {
+        if (getCardIdFromNodeId(link.source?.node) === currentCard.id) {
             // 根据节点ID更新链接的源位置
             const nodeIndex = parseInt(link.source.node.split('-node')[1]) - 1;
             const nodeConfig = currentCard.nodes[nodeIndex]; // 获取当前节点的配置
@@ -591,7 +602,7 @@ function moveCard(e) {
             link.source.y = 30 + currentCard.y + topBottomPadding + (nodeConfig.level + 1) * nodeSpacing - (
                 nodeSpacing / 2); // 根据节点的index调整y坐标
         }
-        if (link.target && link.target.node.startsWith(currentCard.id)) {
+        if (link.target && getCardIdFromNodeId(link.target?.node) === currentCard.id) {
             // 根据节点ID更新链接的目标位置
             const nodeIndex = parseInt(link.target.node.split('-node')[1]) - 1;
             const nodeConfig = currentCard.nodes[nodeIndex]; // 获取当前节点的配置
@@ -609,7 +620,7 @@ function moveCard(e) {
     document.getElementById('currentCardData-position').textContent = '位置: (' + currentCardData.x + ',' + currentCardData.y + ')';
     document.getElementById('currentCardData-titlebarcolor').textContent = '标题栏颜色: ' + currentCardData.titleBarColor;
     //TODO: 看看是不是condition,是的话，显示condition的设定模块
-    //judgeCard(currentCardData,cardLinklist);
+    judgeCard(currentCardData,cardLinklist);
     //TODO: 显示当前卡片的详细信息
    
     // 先统一把特殊样式清掉
@@ -938,7 +949,11 @@ function removeCard(cardId) {
     if (cardIndex !== -1) {
         cardLinklist.splice(cardIndex, 1);
         // 同时移除所有与该卡片连接的线
-        links = links.filter(link => !(link.source.node.startsWith(cardId) || (link.target && link.target.node.startsWith(cardId))));
+        links = links.filter(link => {
+            const sourceCardId = getCardIdFromNodeId(link.source?.node);
+            const targetCardId = getCardIdFromNodeId(link.target?.node);
+            return sourceCardId !== cardId && targetCardId !== cardId;
+        });
         drawLinks();
         drawCards();
     }
