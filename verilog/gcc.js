@@ -17,6 +17,7 @@ function downloadTextAsFile(text, filename) {
     URL.revokeObjectURL(url);
 }
 
+<<<<<<< HEAD
 function parseNodeId(nodeId) {
     if (typeof nodeId !== 'string') return null;
     const m = nodeId.match(/^(card[^-]*)-node(\d+)$/);
@@ -86,6 +87,8 @@ function normalizeImportedGraph(data) {
     return { Var: Array.isArray(data?.Var) ? data.Var : [], cardLinklist: importedCards, links: importedLinks };
 }
 
+=======
+>>>>>>> eaee7017bb26eb6b3ac90fe562f293bab9267d81
 function uploadTextAsFile() {
     const input = document.createElement('input');
     input.type = 'file';
@@ -98,11 +101,18 @@ function uploadTextAsFile() {
             reader.onload = function (e) {
                 const jsonString = e.target.result;
                 const data = JSON.parse(jsonString);
+<<<<<<< HEAD
                 const normalized = normalizeImportedGraph(data);
                 clearAll(Var);
                 Var = normalized.Var;
                 cardLinklist = normalized.cardLinklist;
                 links = normalized.links;
+=======
+                clearAll(Var);
+                Var = data.Var;
+                cardLinklist = data.cardLinklist;
+                links = data.links;
+>>>>>>> eaee7017bb26eb6b3ac90fe562f293bab9267d81
                 init();
                 InitVar(Var);
                 //VarCount = Var.length;
