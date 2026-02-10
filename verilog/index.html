@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blueprint</title>
+    <title>Blueprint - Verilog版</title>
     <style>
         body,
         html {
@@ -92,12 +92,12 @@
         }
 
         .grid-background {
-            background-color: #292929;
+            background-color: #1a1a2e;
             background-image:
-                linear-gradient(to right, black 1px, transparent 1px),
-                linear-gradient(to bottom, black 1px, transparent 1px),
-                linear-gradient(to right, #404040 1px, transparent 1px),
-                linear-gradient(to bottom, #404040 1px, transparent 1px);
+                linear-gradient(to right, #0f0f23 1px, transparent 1px),
+                linear-gradient(to bottom, #0f0f23 1px, transparent 1px),
+                linear-gradient(to right, #16213e 1px, transparent 1px),
+                linear-gradient(to bottom, #16213e 1px, transparent 1px);
             background-size:
                 100px 100px,
                 100px 100px,
@@ -148,7 +148,7 @@
             align-items: center;
             top: 0;
             left: 0;
-            background: #010208;
+            background: #0f0f23;
             height: 120px;
             gap: 10px;
             margin-top: 20px;
@@ -189,7 +189,7 @@
             flex: 0 0 auto;
             width: 160px;
             height: 120px;
-            background: #a6b4e8;
+            background: #4fc3f7;
             color: #181b20;
             align-items: center;
             justify-content: center;
@@ -233,6 +233,20 @@
             position: absolute;
             top: 5px;
             right: 5px;
+        }
+
+        .version-badge {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 12px;
+            z-index: 1000;
         }
 
         #custom-fn-modal {
@@ -307,12 +321,13 @@
         }
 
         #customFnConfirm {
-            background: #4CAF50;
+            background: #667eea;
         }
     </style>
 </head>
 
 <body>
+    <div class="version-badge">⚡ Verilog 版本</div>
     <!-- 弹窗容器 -->
     <div id="card-creation-modal"
         style="display:none; position: absolute; border: 1px solid #ccc; background-color: #fff; padding: 10px; z-index: 100;">
@@ -343,8 +358,7 @@
         <button id="uploadBtn">上传</button>
         <button id="downloadBtn">下载</button>
         <button id="submitBtn">提交</button>
-        <button id="compileBtn" style="background-color: #4CAF50;">编译为C</button>
-        <button id="compileVerilogBtn" style="background-color: #2196F3;">编译为Verilog</button>
+        <button id="compileBtn" style="background-color: #667eea;">编译为Verilog</button>
     </div>
     <div class="card-menu">
         <h3>卡片类型</h3>
@@ -371,7 +385,7 @@
         </div>
     </div>
     <div id="container">
-        <button id="addBtn" class="variety_Button">点我新增 DIV</button>
+        <button id="addBtn" class="variety_Button">点我新增 REG</button>
     </div>
     <svg style="width: 100%;height: 100%;" id="svgContainer" class="grid-background">
         <g id="linksContainer"></g>
@@ -382,14 +396,11 @@
     <script src="judgeCard.js"></script>
     <script src="gcc.js"></script>
     <script src="ValueButton.js"></script>
-    <script src="compiler.js"></script>
-    <script src="verilog/compilerVerilog.js"></script>
+    <script src="compilerVerilog.js"></script>
 
     <script>
-        //let cards = nodekind();
         // cards 现在在 CardKind.js 中定义为全局变量
         getCardKind(); // 异步加载卡片类型
-        //let cards = getStdCardKind();
         let cardLinklist = [
             {
                 id: 'card0', 
@@ -404,14 +415,14 @@
                     label: "call", 
                     color: "#fff", 
                     multiConnected: 1 }], 
-                    titleBarColor: [ "#84fab0", "#8fd3f4" ]
+                    titleBarColor: [ "#667eea", "#764ba2" ]
             }
         ];
         let Var = [
             {
                 id: 1,
                 name: 'NULL',
-                type: 'int',
+                type: 'reg',
                 value: 0,
             }
         ];
@@ -425,16 +436,14 @@
         let isPanning = false;
         let startPan = { x: 0, y: 0 };
         let currentPan = { x: 0, y: 0 };
-        
 
         const btn = document.getElementById('addBtn');
         const container = document.getElementById('container');
         let count = 0;
-        //let VarCount = 0;
         init();
         InitVar(Var);
         ValueButton(Var);
-        let Com = [cardLinklist[0]];
+        
         try {
             const order = topologicalSort(links, cardLinklist);
             console.log('拓扑排序结果:', order);
@@ -447,7 +456,6 @@
             console.log(Var.length);
             console.log(cardLinklist);
             console.log(links);
-            compileAndShow();
         });
 
         document.getElementById('downloadBtn').addEventListener('click', function () {
@@ -465,7 +473,7 @@
         });
 
         document.getElementById('compileBtn').addEventListener('click', function () {
-            compileAndDownload();
+            compileAndDownloadVerilog();
         });
     </script>
 </body>
