@@ -4,6 +4,231 @@
 ///除非要加东西
 //引用Variables.js文件
 //import { cardLinklist } from './Variables.js';
+let viewBoxState = null;
+let baseViewBoxSize = null;
+let customFunctionUiInitialized = false;
+
+function ensureViewBoxState() {
+    const svgContainer = document.getElementById('svgContainer');
+    if (!svgContainer) return null;
+
+    if (viewBoxState) return viewBoxState;
+
+    const vb = svgContainer.getAttribute('viewBox');
+    if (vb) {
+        const parts = vb.split(/\s+/).map(Number);
+        if (parts.length === 4 && parts.every(n => Number.isFinite(n))) {
+            viewBoxState = { x: parts[0], y: parts[1], w: parts[2], h: parts[3] };
+        }
+    }
+
+    if (!viewBoxState) {
+        const w = svgContainer.clientWidth || 1;
+        const h = svgContainer.clientHeight || 1;
+        viewBoxState = { x: 0, y: 0, w, h };
+        svgContainer.setAttribute('viewBox', `${viewBoxState.x} ${viewBoxState.y} ${viewBoxState.w} ${viewBoxState.h}`);
+    }
+
+    if (!baseViewBoxSize) {
+        baseViewBoxSize = { w: viewBoxState.w, h: viewBoxState.h };
+    }
+
+    return viewBoxState;
+}
+
+function setViewBox(next) {
+    const svgContainer = document.getElementById('svgContainer');
+    if (!svgContainer) return;
+
+    viewBoxState = next;
+    svgContainer.setAttribute('viewBox', `${next.x} ${next.y} ${next.w} ${next.h}`);
+
+    if (typeof currentPan === 'object' && currentPan) {
+        currentPan.x = -next.x;
+        currentPan.y = -next.y;
+    }
+}
+
+function clientPointToSvg(clientX, clientY) {
+    const svgContainer = document.getElementById('svgContainer');
+    if (!svgContainer) return { x: clientX, y: clientY };
+    const ctm = svgContainer.getScreenCTM();
+    if (!ctm) return { x: clientX, y: clientY };
+
+    const pt = svgContainer.createSVGPoint();
+    pt.x = clientX;
+    pt.y = clientY;
+    const svgPt = pt.matrixTransform(ctm.inverse());
+    return { x: svgPt.x, y: svgPt.y };
+}
+
+function normalizeIdentifier(raw, fallback) {
+    const input = (raw ?? '').toString().trim();
+    const base = input === '' ? fallback : input;
+    let cleaned = base.replace(/[^\w]/g, '_');
+    if (/^\d/.test(cleaned)) cleaned = '_' + cleaned;
+    if (cleaned === '' || cleaned === '_') cleaned = fallback;
+    return cleaned;
+}
+
+function makeUniqueIdentifiers(names) {
+    const used = new Set();
+    return names.map((name, idx) => {
+        let next = name;
+        if (!used.has(next)) {
+            used.add(next);
+            return next;
+        }
+        let suffix = 2;
+        while (used.has(`${next}_${suffix}`)) suffix++;
+        next = `${next}_${suffix}`;
+        used.add(next);
+        return next;
+    });
+}
+
+function getDefaultNewCardPosition() {
+    const vb = ensureViewBoxState();
+    if (vb) {
+        return { x: vb.x + vb.w / 2 - 75, y: vb.y + vb.h / 2 - 15 };
+    }
+    const pan = typeof currentPan === 'object' && currentPan ? currentPan : { x: 0, y: 0 };
+    return { x: pan.x + 100, y: pan.y + 100 };
+}
+
+function renderCustomFunctionArgs() {
+    const argsContainer = document.getElementById('custom-fn-args');
+    const countInput = document.getElementById('customFnArgCount');
+    if (!argsContainer || !countInput) return;
+
+    const count = Math.max(0, Math.min(16, Number.parseInt(countInput.value, 10) || 0));
+    countInput.value = String(count);
+    argsContainer.innerHTML = '';
+
+    for (let i = 0; i < count; i++) {
+        const row = document.createElement('div');
+        row.className = 'custom-fn-row';
+
+        const label = document.createElement('div');
+        label.textContent = `参数${i + 1}`;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.id = `customFnArgName-${i}`;
+        input.placeholder = `例如: arg${i + 1}`;
+
+        row.appendChild(label);
+        row.appendChild(input);
+        argsContainer.appendChild(row);
+    }
+}
+
+function showCustomFunctionModal() {
+    const modal = document.getElementById('custom-fn-modal');
+    if (!modal) return;
+    modal.style.display = 'block';
+    renderCustomFunctionArgs();
+    const nameInput = document.getElementById('customFnName');
+    if (nameInput) nameInput.focus();
+}
+
+function hideCustomFunctionModal() {
+    const modal = document.getElementById('custom-fn-modal');
+    if (!modal) return;
+    modal.style.display = 'none';
+}
+
+function createCustomFunctionCardFromModal() {
+    const nameInput = document.getElementById('customFnName');
+    const countInput = document.getElementById('customFnArgCount');
+    if (!countInput) return;
+
+    const rawFnName = nameInput ? nameInput.value : '';
+    const fnName = normalizeIdentifier(rawFnName, `func${cardLinklist.length}`);
+    const count = Math.max(0, Math.min(16, Number.parseInt(countInput.value, 10) || 0));
+
+    const rawArgs = [];
+    for (let i = 0; i < count; i++) {
+        const argInput = document.getElementById(`customFnArgName-${i}`);
+        rawArgs.push(argInput ? argInput.value : '');
+    }
+    const normalizedArgs = makeUniqueIdentifiers(
+        rawArgs.map((v, i) => normalizeIdentifier(v, `arg${i + 1}`))
+    );
+
+    const nodes = [
+        { type: 'in', level: 0, enumType: 'call', label: 'call', color: '#fff', multiConnected: 1, value: '' },
+        { type: 'out', level: 0, enumType: 'call', label: 'call', color: '#fff', multiConnected: 1, value: '' }
+    ];
+    normalizedArgs.forEach((argName, idx) => {
+        nodes.push({
+            type: 'out',
+            level: idx + 1,
+            enumType: 'double',
+            label: argName,
+            color: '#4fc3f7',
+            multiConnected: 1,
+            value: '',
+            slot: 'type'
+        });
+    });
+
+    const pos = getDefaultNewCardPosition();
+    const card = {
+        id: `card${cardLinklist.length}`,
+        x: pos.x,
+        y: pos.y,
+        label: fnName,
+        type: '定义函数',
+        nodes,
+        titleBarColor: ['#6a11cb', '#2575fc']
+    };
+
+    cardLinklist.push(card);
+    drawLinks();
+    drawCards();
+    hideCustomFunctionModal();
+}
+
+function setupCustomFunctionUi() {
+    if (customFunctionUiInitialized) return;
+    customFunctionUiInitialized = true;
+
+    const openBtn = document.getElementById('customFunctionBtn');
+    if (openBtn) {
+        openBtn.addEventListener('click', showCustomFunctionModal);
+    }
+
+    const countInput = document.getElementById('customFnArgCount');
+    if (countInput) {
+        countInput.addEventListener('input', renderCustomFunctionArgs);
+        countInput.addEventListener('change', renderCustomFunctionArgs);
+    }
+
+    const cancelBtn = document.getElementById('customFnCancel');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', hideCustomFunctionModal);
+    }
+
+    const confirmBtn = document.getElementById('customFnConfirm');
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', createCustomFunctionCardFromModal);
+    }
+
+    const modal = document.getElementById('custom-fn-modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) hideCustomFunctionModal();
+        });
+    }
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        const modal = document.getElementById('custom-fn-modal');
+        if (modal && modal.style.display === 'block') hideCustomFunctionModal();
+    });
+}
+
 function drawCards() {
     const cardsContainer = document.getElementById('cardsContainer');
     cardsContainer.innerHTML = ''; // 清除现有的卡片
@@ -223,6 +448,53 @@ function drawCards() {
                     foreignObject.appendChild(input);
                     group.appendChild(foreignObject);
                     break;
+                case 'type':
+                    const typeForeignObject = document.createElementNS('http://www.w3.org/2000/svg',
+                        'foreignObject');
+                    typeForeignObject.setAttribute('x', 0);
+                    typeForeignObject.setAttribute('y', topBottomPadding + titleBarHeight + node.level *
+                        nodeSpacing + 12);
+                    typeForeignObject.setAttribute('width', 130);
+                    typeForeignObject.setAttribute('height', nodeSpacing - 24);
+                    const typeInput = document.createElement('input');
+                    typeInput.type = 'text';
+                    if (node.value == undefined) {
+                        node.value = '';
+                    }
+                    typeInput.value = node.value;
+                    typeInput.placeholder = '类型';
+                    typeInput.addEventListener('input', function () {
+                        node.value = typeInput.value;
+                    });
+                    typeInput.style.width = '110px';
+                    typeInput.style.height = '100%';
+                    typeInput.style.marginLeft = '20px';
+                    typeInput.style.borderRadius = '5px';
+                    typeInput.style.border = '1px solid white';
+                    typeInput.style.backgroundColor = '#222';
+                    typeInput.style.color = 'white';
+                    typeInput.style.fontSize = '1em';
+                    typeInput.style.padding = '0px';
+                    typeInput.style.boxSizing = 'border-box';
+                    typeInput.addEventListener('focus', () => {
+                        typeInput.style.outline = 'none';
+                        typeInput.style.borderColor = 'white';
+                    });
+                    typeInput.addEventListener('blur', () => {
+                        typeInput.style.borderColor = 'white';
+                    });
+                    typeInput.addEventListener('click', function (event) {
+                        event.stopPropagation();
+                    });
+                    typeInput.addEventListener('mousedown', function (event) {
+                        event.stopPropagation();
+                    });
+                    typeInput.addEventListener('touchstart', function (event) {
+                        event.stopPropagation();
+                    });
+                    typeForeignObject.appendChild(typeInput);
+                    group.appendChild(typeForeignObject);
+                    break;
             }
 
 
@@ -355,9 +627,140 @@ function decrementCardIndex(cardStr) {
     return cardStr;
 }
 
+function getCardIdFromNodeId(nodeId) {
+    if (!nodeId) return '';
+    return nodeId.split('-node')[0];
+}
+
+function onSvgContainerClick(e) {
+    if (e.target.classList.contains('delete-icon')) {
+        const linkIndex = e.target.getAttribute('data-link-level');
+        links.splice(linkIndex, 1);
+        drawLinks();
+        drawCards();
+        return;
+    }
+
+    if (e.target.classList.contains('card-delete-icon')) {
+        const cardId = e.target.getAttribute('data-card-id');
+        cardLinklist = cardLinklist.filter(card => card.id !== cardId);
+        links = links.filter(link => {
+            const sourceCardId = getCardIdFromNodeId(link.source?.node);
+            const targetCardId = getCardIdFromNodeId(link.target?.node);
+            return sourceCardId !== cardId && targetCardId !== cardId;
+        });
+
+        const idxToDelete = parseInt(cardId.replace(/\D/g, ''), 10);
+
+        cardLinklist.forEach(c => {
+            const oldIdx = parseInt(c.id.replace(/\D/g, ''), 10);
+            if (oldIdx > idxToDelete) {
+                c.id = c.id.replace(/\d+/, oldIdx - 1);
+            }
+        });
+
+        links.forEach(l => {
+            ['source', 'target'].forEach(k => {
+                if (!l[k]?.node) return;
+                l[k].node = l[k].node.replace(/card(\d+)/, (_, m) =>
+                    +m > idxToDelete ? `card${m - 1}` : `card${m}`
+                );
+            });
+        });
+        drawLinks();
+        drawCards();
+        return;
+    }
+
+    let targetCardContainer = e.target.closest('.card-container');
+    if (targetCardContainer) {
+        targetCardContainer.parentNode.appendChild(targetCardContainer);
+    }
+}
+
+function onSvgContainerContextMenu(e) {
+    e.preventDefault();
+}
+
+function onSvgContainerWheel(e) {
+    const state = ensureViewBoxState();
+    if (!state || !baseViewBoxSize) return;
+
+    e.preventDefault();
+
+    const zoomFactor = Math.exp(e.deltaY * 0.001);
+    const minZoom = 0.2;
+    const maxZoom = 5;
+    const minW = baseViewBoxSize.w / maxZoom;
+    const maxW = baseViewBoxSize.w / minZoom;
+
+    const nextWUnclamped = state.w * zoomFactor;
+    const nextW = Math.max(minW, Math.min(maxW, nextWUnclamped));
+    const scale = nextW / state.w;
+    const nextH = state.h * scale;
+
+    const mouse = clientPointToSvg(e.clientX, e.clientY);
+    const nextX = mouse.x - (mouse.x - state.x) * scale;
+    const nextY = mouse.y - (mouse.y - state.y) * scale;
+
+    setViewBox({ x: nextX, y: nextY, w: nextW, h: nextH });
+}
+
+function onSvgContainerMouseDown(e) {
+    const target = e.target;
+    if (e.button === 2) {
+        isPanning = true;
+        const state = ensureViewBoxState();
+        startPan.x = e.clientX;
+        startPan.y = e.clientY;
+        startPan.viewBoxX = state?.x ?? 0;
+        startPan.viewBoxY = state?.y ?? 0;
+        return;
+    }
+
+    if (target.classList.contains('card') || target.tagName === 'text') {
+        const cardContainer = target.closest('.card-container');
+        const cardId = cardContainer.getAttribute('data-id');
+        startDragCard(e, cardId);
+    }
+}
+
+function onDocumentMouseMove(e) {
+    const svgContainer = document.getElementById('svgContainer');
+    if (!svgContainer) return;
+
+    if (isPanning) {
+        const state = ensureViewBoxState();
+        if (!state) return;
+        const dxPx = e.clientX - startPan.x;
+        const dyPx = e.clientY - startPan.y;
+        const scaleX = state.w / (svgContainer.clientWidth || 1);
+        const scaleY = state.h / (svgContainer.clientHeight || 1);
+        const nextX = (startPan.viewBoxX ?? state.x) - dxPx * scaleX;
+        const nextY = (startPan.viewBoxY ?? state.y) - dyPx * scaleY;
+        setViewBox({ x: nextX, y: nextY, w: state.w, h: state.h });
+        svgContainer.style.backgroundPosition = `${(-nextX) % 100}px ${(-nextY) % 100}px`;
+    } else if (isDragging) {
+        moveCard(e);
+    } else if (isLinking && currentLink) {
+        updateLink(e);
+    }
+}
+
+function onDocumentMouseUp(e) {
+    if (e.button === 2) {
+        isPanning = false;
+    } else if (isDragging) {
+        endDragCard();
+    } else if (isLinking) {
+        endDragLink(e);
+    }
+}
+
 function attachEventListeners() {
 
     const svgContainer = document.getElementById('svgContainer');
+    ensureViewBoxState();
     document.querySelectorAll('.link').forEach(link => {
         link.addEventListener('contextmenu', function (e) {
             e.preventDefault(); // 阻止默认的右键菜单
@@ -365,117 +768,23 @@ function attachEventListeners() {
             showContextMenu(e.clientX, e.clientY, linkId);
         });
     });
-    document.getElementById('svgContainer').addEventListener('click', function (e) {
-        if (e.target.classList.contains('delete-icon')) {
-            // 获取点击的删除图标对应的线的索引
-            const linkIndex = e.target.getAttribute('data-link-level');
-            // 从数组中移除该线
-            links.splice(linkIndex, 1);
+    svgContainer.removeEventListener('click', onSvgContainerClick);
+    svgContainer.addEventListener('click', onSvgContainerClick);
 
-            // 重新绘制剩余的线和删除图标
-            drawLinks();
-            drawCards(); // 如果你的线条与卡片有关联，可能需要重新绘制卡片以更新视图
-        } else if (e.target.classList.contains('card-delete-icon')) {
-            // 获取点击的删除图标对应的卡片ID
-            const cardId = e.target.getAttribute('data-card-id');
-            // 从`cards`数组中移除对应的卡片
-            cardLinklist = cardLinklist.filter(card => card.id !== cardId);
-            // 同时移除所有与该卡片连接的线
-            links = links.filter(link => !(link.source.node.startsWith(cardId) || (link.target && link.target
-                .node.startsWith(cardId))));
+    svgContainer.removeEventListener('contextmenu', onSvgContainerContextMenu);
+    svgContainer.addEventListener('contextmenu', onSvgContainerContextMenu);
 
-            //TODO: 这里需要更新cardLinklist和links数组中的ID
-            //TODO:完成了
-            const idxToDelete = parseInt(cardId.replace(/\D/g, ''), 10);
+    svgContainer.removeEventListener('mousedown', onSvgContainerMouseDown);
+    svgContainer.addEventListener('mousedown', onSvgContainerMouseDown);
 
-            // 只处理序号大于 idxToDelete 的卡片
-            cardLinklist.forEach(c => {
-                const oldIdx = parseInt(c.id.replace(/\D/g, ''), 10);
-                if (oldIdx > idxToDelete) {
-                    c.id = c.id.replace(/\d+/, oldIdx - 1);
-                }
-            });
+    svgContainer.removeEventListener('wheel', onSvgContainerWheel, { passive: false });
+    svgContainer.addEventListener('wheel', onSvgContainerWheel, { passive: false });
 
-            // 2. 重排连线两端
-            links.forEach(l => {
-                ['source', 'target'].forEach(k => {
-                    if (!l[k]?.node) return;
-                    // 节点名形如 card{n}-node{x}，把卡片序号减 1
-                    l[k].node = l[k].node.replace(/card(\d+)/, (_, m) =>
-                        +m > idxToDelete ? `card${m - 1}` : `card${m}`
-                    );
-                });
-            });
-            // 重新绘制卡片和线
-            drawLinks();
-            drawCards();
+    document.removeEventListener('mousemove', onDocumentMouseMove);
+    document.addEventListener('mousemove', onDocumentMouseMove);
 
-
-        } else {
-            let targetCardContainer = e.target.closest('.card-container');
-            if (targetCardContainer) {
-                const cardId = targetCardContainer.getAttribute('data-id');
-                // 将SVG元素移动到最后，使其在视觉上显示在最前面
-                targetCardContainer.parentNode.appendChild(targetCardContainer);
-
-
-
-                // 这里不需要立即调用drawCards或drawLinks，
-                // 除非你需要根据cards数组的新顺序进行其他更新
-            }
-        }
-    });
-
-    svgContainer.addEventListener('contextmenu', function (e) {
-        e.preventDefault(); // 阻止右键菜单
-    });
-
-    svgContainer.addEventListener('mousedown', e => {
-
-        // 检查是否是鼠标右键点击
-
-        const target = e.target;
-        if (e.button === 2) {
-            isPanning = true;
-            startPan.x = e.clientX - currentPan.x;
-            startPan.y = e.clientY - currentPan.y;
-        } else if (target
-
-            .classList.contains('card') || target.tagName === 'text') {
-            const cardContainer = target.closest('.card-container');
-            const cardId = cardContainer.getAttribute('data-id');
-            startDragCard(e, cardId);
-        }
-    });
-    document.addEventListener('mousemove', e => {
-        if (isPanning) {
-            // 正确计算新的视图窗口位置
-            currentPan.x = e.clientX - startPan.x;
-            currentPan.y = e.clientY - startPan.y;
-
-            // 正确调整SVG的viewBox来实现拖动效果
-            // 这里需要更新的是开始拖动的点，而不是当前的点，因此我们反向更新
-            svgContainer.setAttribute('viewBox',
-                `${-currentPan.x} ${-currentPan.y} ${svgContainer.clientWidth} ${svgContainer.clientHeight}`
-            );
-            svgContainer.style.backgroundPosition = `${currentPan.x % 100}px ${currentPan.y % 100}px`;
-        } else if (isDragging) {
-            moveCard(e);
-        } else if (isLinking && currentLink) {
-            updateLink(e);
-        }
-    });
-
-    document.addEventListener('mouseup', e => {
-        if (e.button === 2) {
-            console.log(currentPan);
-            isPanning = false;
-        } else if (isDragging) {
-            endDragCard();
-        } else if (isLinking) {
-            endDragLink(e);
-        }
-    });
+    document.removeEventListener('mouseup', onDocumentMouseUp);
+    document.addEventListener('mouseup', onDocumentMouseUp);
 
 }
 
@@ -485,20 +794,20 @@ function startDragCard(e, cardId) {
     const card = cardLinklist.find(c => c.id === cardId);
     currentCard = card;
 
-    const svgRect = svgContainer.getBoundingClientRect();
-    dragOffsetX = e.clientX - svgRect.left - card.x;
-    dragOffsetY = e.clientY - svgRect.top - card.y;
+    const pt = clientPointToSvg(e.clientX, e.clientY);
+    dragOffsetX = pt.x - card.x;
+    dragOffsetY = pt.y - card.y;
 }
 
 function moveCard(e) {
-    const svgRect = svgContainer.getBoundingClientRect();
-    currentCard.x = e.clientX - svgRect.left - dragOffsetX;
-    currentCard.y = e.clientY - svgRect.top - dragOffsetY;
+    const pt = clientPointToSvg(e.clientX, e.clientY);
+    currentCard.x = pt.x - dragOffsetX;
+    currentCard.y = pt.y - dragOffsetY;
     //菜单要调用下面这句话
     currentCardData = currentCard;
     // Update link positions associated with the currentCard
     links.forEach(link => {
-        if (link.source.node.startsWith(currentCard.id)) {
+        if (getCardIdFromNodeId(link.source?.node) === currentCard.id) {
             // 根据节点ID更新链接的源位置
             const nodeIndex = parseInt(link.source.node.split('-node')[1]) - 1;
             const nodeConfig = currentCard.nodes[nodeIndex]; // 获取当前节点的配置
@@ -508,7 +817,7 @@ function moveCard(e) {
             link.source.y = 30 + currentCard.y + topBottomPadding + (nodeConfig.level + 1) * nodeSpacing - (
                 nodeSpacing / 2); // 根据节点的index调整y坐标
         }
-        if (link.target && link.target.node.startsWith(currentCard.id)) {
+        if (link.target && getCardIdFromNodeId(link.target?.node) === currentCard.id) {
             // 根据节点ID更新链接的目标位置
             const nodeIndex = parseInt(link.target.node.split('-node')[1]) - 1;
             const nodeConfig = currentCard.nodes[nodeIndex]; // 获取当前节点的配置
@@ -572,9 +881,8 @@ function startDragLink(e) {
     }
     isLinking = true;
 
-    const svgRect = svgContainer.getBoundingClientRect();
-    const nodeX = e.clientX - svgRect.left;
-    const nodeY = e.clientY - svgRect.top;
+    const nodeX = card.x + (node.type === 'in' ? 0 : 150);
+    const nodeY = card.y + 30 + 20 + (node.level + 1) * 50 - 25;
 
     currentLink = {
         source: {
@@ -590,19 +898,16 @@ function startDragLink(e) {
 }
 
 function updateLink(e) {
-    const svgRect = svgContainer.getBoundingClientRect();
+    const pt = clientPointToSvg(e.clientX, e.clientY);
     currentLink.target = {
-        x: e.clientX - svgRect.left,
-        y: e.clientY - svgRect.top
+        x: pt.x,
+        y: pt.y
     };
     drawCurrentLink();
 }
 
 function endDragLink(e) {
     isLinking = false;
-    const svgRect = svgContainer.getBoundingClientRect();
-    const x = e.clientX - svgRect.left;
-    const y = e.clientY - svgRect.top;
 
     // 默认情况下，假设目标节点就是e.target
     let targetNode = e.target;
@@ -650,15 +955,15 @@ function endDragLink(e) {
         if (currentLink.source.node !== targetNodeId && sourceNode.enumType === targetNodeObj.enumType) {
             validTargetFound = true;
             currentLink.source.enumType = sourceNode.enumType;
-            currentLink.source.x = currentLink.source.x - currentPan.x;
-            currentLink.source.y = currentLink.source.y - currentPan.y;
+            const targetX = targetCard.x + (targetNodeObj.type === 'in' ? 0 : 150);
+            const targetY = targetCard.y + 30 + 20 + (targetNodeObj.level + 1) * 50 - 25;
             // 更新连接的目标信息，并保存该连接
             links.push({
                 ...currentLink,
                 target: {
                     node: targetNodeId,
-                    x: x - currentPan.x,
-                    y: y - currentPan.y,
+                    x: targetX,
+                    y: targetY,
                     color: sourceNode.color,
                     enumType: sourceNode.enumType
                 }
@@ -705,20 +1010,14 @@ function drawCurrentLink() {
     path.setAttribute('stroke-width', 5);
     path.setAttribute('fill', 'none');
 
-    // 计算考虑了平移偏移的起点和终点
-    const adjustedSourceX = currentLink.source.x - currentPan.x;
-    const adjustedSourceY = currentLink.source.y - currentPan.y;
-    const adjustedTargetX = currentLink.target.x - currentPan.x;
-    const adjustedTargetY = currentLink.target.y - currentPan.y;
-
     // 更新路径以使用调整后的坐标
     if (currentLink.source.type === 'out') {
         const d =
-            `M${adjustedSourceX},${adjustedSourceY} C${adjustedSourceX + 100},${adjustedSourceY} ${adjustedTargetX - 100},${adjustedTargetY} ${adjustedTargetX},${adjustedTargetY}`;
+            `M${currentLink.source.x},${currentLink.source.y} C${currentLink.source.x + 100},${currentLink.source.y} ${currentLink.target.x - 100},${currentLink.target.y} ${currentLink.target.x},${currentLink.target.y}`;
         path.setAttribute('d', d);
     } else {
         const d =
-            `M${adjustedSourceX},${adjustedSourceY} C${adjustedSourceX - 100},${adjustedSourceY} ${adjustedTargetX + 100},${adjustedTargetY} ${adjustedTargetX},${adjustedTargetY}`;
+            `M${currentLink.source.x},${currentLink.source.y} C${currentLink.source.x - 100},${currentLink.source.y} ${currentLink.target.x + 100},${currentLink.target.y} ${currentLink.target.x},${currentLink.target.y}`;
         path.setAttribute('d', d);
     }
 
@@ -826,14 +1125,13 @@ function createNewCard(cardTemplate, mouseX, mouseY, sourceNode) {
     newCard.nodes.forEach(node => {
         node.value = '';
     });
-    newCard.x = mouseX - 75 - currentPan.x; // 调整为鼠标中心
-    newCard.y = mouseY - 15 - currentPan.y; // 调整为鼠标中心
+    const pt = clientPointToSvg(mouseX, mouseY);
+    newCard.x = pt.x - 75;
+    newCard.y = pt.y - 15;
     cardLinklist.push(newCard); // 将新创建的卡片添加到卡片列表中
 
     // 如果提供了sourceNode，找到新卡片的合适target node并创建连接
     if (sourceNode) {
-        sourceNode.x -= currentPan.x;
-        sourceNode.y -= currentPan.y;
         let targetNode = newCard.nodes.find(node => node.enumType === sourceNode.enumType && node.type === 'in');
         if (targetNode) {
             links.push({
@@ -866,7 +1164,11 @@ function removeCard(cardId) {
     if (cardIndex !== -1) {
         cardLinklist.splice(cardIndex, 1);
         // 同时移除所有与该卡片连接的线
-        links = links.filter(link => !(link.source.node.startsWith(cardId) || (link.target && link.target.node.startsWith(cardId))));
+        links = links.filter(link => {
+            const sourceCardId = getCardIdFromNodeId(link.source?.node);
+            const targetCardId = getCardIdFromNodeId(link.target?.node);
+            return sourceCardId !== cardId && targetCardId !== cardId;
+        });
         drawLinks();
         drawCards();
     }
@@ -895,6 +1197,7 @@ function init() {
     drawLinks();
     drawCards();
     attachEventListeners();
+    setupCustomFunctionUi();
 }
 
 function startcard() {

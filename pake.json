@@ -1,0 +1,39 @@
+{
+  "name": "Blueprint图形编程工具",
+  "width": 1400,
+  "height": 900,
+  "resizable": true,
+  "fullscreen": false,
+  "transparent": false,
+  "user_agent": "",
+  "show_menu": false,
+  "show_status_bar": false,
+  "show_dev_tools": false,
+  "url": "./index.html",
+  "inject": [
+    "// 注入Tauri API支持（如果需要）",
+    "// 注意：Pake基于Tauri，默认已包含Tauri API"
+  ],
+  "features": {
+    "file_system": true,
+    "dialog": true,
+    "clipboard": true
+  },
+  "tauri_config": {
+    "allowlist": {
+      "fs": {
+        "readFile": true,
+        "writeFile": true,
+        "readDir": true
+      },
+      "dialog": {
+        "save": true,
+        "open": true
+      },
+      "clipboard": {
+        "writeText": true,
+        "readText": true
+      }
+    }
+  }
+}
